@@ -6,15 +6,20 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+
+import com.sokool.intimacyup.helpers.HelperFuctions;
+import com.sokool.intimacyup.model.LevelResults;
 
 import net.idik.lib.slimadapter.SlimAdapter;
 import net.idik.lib.slimadapter.SlimInjector;
@@ -22,8 +27,6 @@ import net.idik.lib.slimadapter.viewinjector.IViewInjector;
 
 import java.util.ArrayList;
 import java.util.Random;
-
-import com.sokool.intimacyup.model.LevelResults;
 
 
 /**
@@ -36,6 +39,8 @@ public class MarksFragment extends Fragment implements View.OnClickListener {
     protected Button nextQuestionButton;
     protected RecyclerView scoresRecyclerView;
     protected TextView currentLevelTextView;
+    protected TextView currentPlayer;
+    protected Button restart;
     NewPlayer newPlayer;
     String level;
 
@@ -56,26 +61,51 @@ public class MarksFragment extends Fragment implements View.OnClickListener {
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
         newPlayer = (NewPlayer) getActivity();
         level = newPlayer.getLevel();
         currentLevelTextView.setText(level);
-        if(level.equals("done")){
-            currentLevelTextView.setText(level+" Thank you");
+        if (level.equals("done")) {
+            currentLevelTextView.setText(level + " Thank you");
         }
-        final SharedPreferences sp = getActivity().getBaseContext().getSharedPreferences("PLAYERS", Context.MODE_PRIVATE);
+        final SharedPreferences sp = getActivity().getSharedPreferences("PLAYERS", Context.MODE_PRIVATE);
         sp.registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener() {
+
             @Override
             public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
                 updateScores(sharedPreferences);
+
             }
         });
+//        currentPlayer.setText("ee");
         updateScores(sp);
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
 
     }
 
-    public void updateScores(final SharedPreferences sp){
+
+    public void updateScores(final SharedPreferences sp) {
+
+        String lastPlayer = sp.getString("lastPlayer", "Player1");
+        String player1Svd = sp.getString("Player1", "Player1");
+        String player2Svd = sp.getString("Player2", "Player2");
+        String toAsk = "";
+        if (lastPlayer.equals(player1Svd)) {
+            toAsk = player2Svd;
+        }
+        if (lastPlayer.equals(player2Svd)) {
+            toAsk = player1Svd;
+        }
+
+        currentPlayer.setText("Next " + HelperFuctions.capitalize(lastPlayer) + " asking " + HelperFuctions.capitalize(toAsk));
+
 
         scoresRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         SlimAdapter slimAdapter = SlimAdapter.create()
@@ -93,7 +123,7 @@ public class MarksFragment extends Fragment implements View.OnClickListener {
                         };
 
                         Random random = new Random();
-                        int num =  random.nextInt(6);
+                        int num = random.nextInt(6);
 
                         View parent = injector.findViewById(R.id.scores_parent_linear_layout);
                         ScoresViewHolder scoresViewHolder = new ScoresViewHolder(parent);
@@ -105,8 +135,8 @@ public class MarksFragment extends Fragment implements View.OnClickListener {
                         String player2 = sp.getString("Player2", "Player2");
                         scoresViewHolder.player1LableTextView.setText(player1);
                         scoresViewHolder.player2LableTextView.setText(player2);
-                        if(data.getLevel().equals(level)){
-                            parent.setBackgroundResource(getDrawableIdFromString(getContext(),"gradient_cherry"));
+                        if (data.getLevel().equals(level)) {
+                            parent.setBackgroundResource(getDrawableIdFromString(getContext(), "gradient_cherry"));
                         }
 
                     }
@@ -141,6 +171,8 @@ public class MarksFragment extends Fragment implements View.OnClickListener {
         if (view.getId() == R.id.next_question_button) {
             newPlayer.play();
 
+        } else if (view.getId() == R.id.restart) {
+            newPlayer.restart();
         }
     }
 
@@ -150,9 +182,14 @@ public class MarksFragment extends Fragment implements View.OnClickListener {
         nextQuestionButton.setOnClickListener(MarksFragment.this);
         scoresRecyclerView = (RecyclerView) rootView.findViewById(R.id.scores_recycler_view);
         currentLevelTextView = (TextView) rootView.findViewById(R.id.current_level_text_view);
+        currentPlayer = (TextView) rootView.findViewById(R.id.current_player);
+        restart = (Button) rootView.findViewById(R.id.restart);
+        restart.setOnClickListener(MarksFragment.this);
     }
 
     public interface NewPlayer {
+        public void restart();
+
         public void play();
 
         public String getLevel();
@@ -176,4 +213,6 @@ public class MarksFragment extends Fragment implements View.OnClickListener {
             player2MarksTextView = (TextView) view.findViewById(R.id.player2_marks_text_view);
         }
     }
+
+
 }

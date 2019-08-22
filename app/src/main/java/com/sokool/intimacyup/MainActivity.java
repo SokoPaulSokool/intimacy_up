@@ -7,14 +7,19 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Random;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.sokool.intimacyup.model.LevelResults;
 import com.sokool.intimacyup.model.Question;
 
@@ -33,17 +38,18 @@ public class MainActivity extends AppCompatActivity implements UserFragment.Reco
     ArrayList<LevelResults> levelResultsList;
     int playerOneTotal = 0;
     int playerTwoTotal = 0;
- int playerOneTotalL1 = 0;
+    int playerOneTotalL1 = 0;
     int playerTwoTotalL1 = 0;
- int playerOneTotalL2 = 0;
+    int playerOneTotalL2 = 0;
     int playerTwoTotalL2 = 0;
- int playerOneTotalL3 = 0;
+    int playerOneTotalL3 = 0;
     int playerTwoTotalL3 = 0;
 
     public String PLAYER_ONE;
-    public String PLAYER_TWO ;
+    public String PLAYER_TWO;
+    SharedPreferences.OnSharedPreferenceChangeListener spListener;
 
-    String currentPlayer = PLAYER_ONE;
+    String currentPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,12 +62,6 @@ public class MainActivity extends AppCompatActivity implements UserFragment.Reco
 
         initView();
 
-
-//        FragmentManager manager = getSupportFragmentManager();
-//        FragmentTransaction transaction = manager.beginTransaction();
-//        NormalUserRegistrationFragment normalUserRegistrationFragment = new NormalUserRegistrationFragment();
-//        transaction.replace(R.id.registrationViews, normalUserRegistrationFragment, "normalUserRegistrationFragment");
-//        transaction.commit();
         questionListOne = new ArrayList<>();
         questionListOne = questions(LEVEL_ONE);
         questionListTwo = new ArrayList<>();
@@ -71,56 +71,105 @@ public class MainActivity extends AppCompatActivity implements UserFragment.Reco
 
 
         FragmentManager fragmentManager = getSupportFragmentManager();
-        MarksFragment  marksFragment = new MarksFragment();
+        MarksFragment marksFragment = new MarksFragment();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(R.id.dropView,marksFragment,"marksFragment");
+        fragmentTransaction.replace(R.id.dropView, marksFragment, "marksFragment");
         fragmentTransaction.commit();
 
         FragmentTransaction fragmentTransaction1 = fragmentManager.beginTransaction();
         NameFragment nameFragment = new NameFragment();
-        nameFragment.setCancelable(false);
-        nameFragment.show(fragmentTransaction1,"dialog");
+        final SharedPreferences spp = getSharedPreferences("PLAYERS", Context.MODE_PRIVATE);
+        String player1Svd = spp.getString("Player1", null);
+        String player2Svd = spp.getString("Player2", null);
+        if (TextUtils.isEmpty(player1Svd) || TextUtils.isEmpty(player2Svd)) {
+            nameFragment.setCancelable(false);
+        }
 
-        final SharedPreferences sp = getSharedPreferences("PLAYERS", Context.MODE_PRIVATE);
-        PLAYER_ONE = sp.getString("Player1","Player1");
-        PLAYER_TWO = sp.getString("Player2","Player2");
+        nameFragment.show(fragmentTransaction1, "dialog");
+        spListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+            @Override
+            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+                PLAYER_ONE = sharedPreferences.getString("Player1", "Player1");
+                PLAYER_TWO = sharedPreferences.getString("Player2", "Player2");
+                if (key.equals("Player1") || key.equals("Player2")) {
+                    restart();
+                }
+            }
+        };
+        final SharedPreferences sp = this.getSharedPreferences("PLAYERS", Context.MODE_PRIVATE);
+        sp.registerOnSharedPreferenceChangeListener(spListener);
+        PLAYER_ONE = sp.getString("Player1", null);
+        PLAYER_TWO = sp.getString("Player2", null);
+        if (PLAYER_ONE == null || PLAYER_TWO == null) {
+            PLAYER_ONE = "Player1";
+            PLAYER_TWO = "Player2";
+            sp.edit().putString("Player1", "").apply();
+            sp.edit().putString("Player2", "").apply();
+        }
 
-         currentPlayer = PLAYER_ONE;
 
-//        SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-//            public void onSharedPreferenceChanged(SharedPreferences prefs, String s) {
-//                Toast.makeText(getBaseContext() , s+"oooooooo", Toast.LENGTH_SHORT).show();
-//            }
-//        };
-//        sp.registerOnSharedPreferenceChangeListener(listener);
-//        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener() {
-//            @Override
-//            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-////                Toast.makeText(getBaseContext() , s+"kkkkkkkkk", Toast.LENGTH_SHORT).show();
-////                Log.e("lll","sksoso");
-//            }
-//        });
+        Gson gson = new Gson();
+        Type questionType = new TypeToken<ArrayList<Question>>() {
+        }.getType();
+
+        String stored_questionListOne = sp.getString("questionListOne", null);
+        if (stored_questionListOne != null) {
+            questionListOne = gson.fromJson(stored_questionListOne, questionType);
+        } else {
+            questionListOne = questions(LEVEL_ONE);
+
+        }
+
+        String stored_questionListTwo = sp.getString("questionListTwo", null);
+        if (stored_questionListTwo != null) {
+            questionListTwo = gson.fromJson(stored_questionListTwo, questionType);
+        } else {
+            questionListTwo = questions(LEVEL_TWO);
+        }
+
+        String stored_questionListThree = sp.getString("questionListThree", null);
+        if (stored_questionListThree != null) {
+            questionListThree = gson.fromJson(stored_questionListThree, questionType);
+        } else {
+            questionListThree = questions(LEVEL_THREE);
+        }
+
+        currentLevel = sp.getString("currentLevel", LEVEL_ONE);
 
 
+        playerOneTotalL1 = sp.getInt("playerOneTotalL1", 0);
+        playerTwoTotalL1 = sp.getInt("playerTwoTotalL1", 0);
+
+        playerOneTotalL2 = sp.getInt("playerOneTotalL2", 0);
+        playerTwoTotalL2 = sp.getInt("playerTwoTotalL2", 0);
+
+        playerOneTotalL3 = sp.getInt("playerOneTotalL3", 0);
+        playerTwoTotalL3 = sp.getInt("playerTwoTotalL3", 0);
+
+
+        String lastPlayer = sp.getString("lastPlayer", null);
+        if (lastPlayer != null) {
+            currentPlayer = lastPlayer;
+            togglePlayers();
+        } else {
+            currentPlayer = PLAYER_TWO;
+
+        }
 
 
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
+
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
         }
@@ -177,29 +226,29 @@ public class MainActivity extends AppCompatActivity implements UserFragment.Reco
 
         };
         ArrayList<Question> questionArrayList = new ArrayList<>();
-        if(level.equals(LEVEL_ONE)) {
+        if (level.equals(LEVEL_ONE)) {
             current = set1;
 
             for (int i = 0; i < current.length; i++
-                    ) {
+            ) {
                 Question question = new Question(current[i]);
                 questionArrayList.add(question);
             }
         }
 
-        if(level.equals(LEVEL_TWO)) {
+        if (level.equals(LEVEL_TWO)) {
             current = set2;
             for (int i = 0; i < current.length; i++
-                    ) {
+            ) {
                 Question question = new Question(current[i]);
                 questionArrayList.add(question);
             }
         }
 
-        if(level.equals(LEVEL_THREE)) {
+        if (level.equals(LEVEL_THREE)) {
             current = set3;
             for (int i = 0; i < current.length; i++
-                    ) {
+            ) {
                 Question question = new Question(current[i]);
                 questionArrayList.add(question);
             }
@@ -216,119 +265,190 @@ public class MainActivity extends AppCompatActivity implements UserFragment.Reco
     @Override
     public void results(Question question) {
         String player = question.getAnsweredBy();
-        if(currentLevel.equals(LEVEL_ONE)){
-            if(player.equals(PLAYER_ONE)){
+        if (currentLevel.equals(LEVEL_ONE)) {
+            if (player.equals(PLAYER_ONE)) {
+
                 playerOneTotalL1 += question.getPoints();
             }
-            if(player.equals(PLAYER_TWO)){
+            if (player.equals(PLAYER_TWO)) {
                 playerTwoTotalL1 += question.getPoints();
             }
+
         }
-       if(currentLevel.equals(LEVEL_TWO)){
-            if(player.equals(PLAYER_ONE)){
+        if (currentLevel.equals(LEVEL_TWO)) {
+            if (player.equals(PLAYER_ONE)) {
                 playerOneTotalL2 += question.getPoints();
             }
-            if(player.equals(PLAYER_TWO)){
+            if (player.equals(PLAYER_TWO)) {
                 playerTwoTotalL2 += question.getPoints();
             }
         }
-       if(currentLevel.equals(LEVEL_THREE)){
-            if(player.equals(PLAYER_ONE)){
+        if (currentLevel.equals(LEVEL_THREE)) {
+            if (player.equals(PLAYER_ONE)) {
                 playerOneTotalL3 += question.getPoints();
             }
-            if(player.equals(PLAYER_TWO)){
+            if (player.equals(PLAYER_TWO)) {
                 playerTwoTotalL3 += question.getPoints();
             }
         }
 
 
-
-        if(currentLevel.equals(LEVEL_ONE)){
+        if (currentLevel.equals(LEVEL_ONE)) {
             questionListOne.remove(num);
         }
-         if(currentLevel.equals(LEVEL_TWO)){
-             questionListTwo.remove(num);
+        if (currentLevel.equals(LEVEL_TWO)) {
+            questionListTwo.remove(num);
         }
-         if(currentLevel.equals(LEVEL_THREE)){
-             questionListThree.remove(num);
+        if (currentLevel.equals(LEVEL_THREE)) {
+            questionListThree.remove(num);
         }
+
+        saveState(player);
+        togglePlayers();
+    }
+
+    private void saveState(String lastPlayer) {
+        Gson gson = new Gson();
+        final SharedPreferences sp = getSharedPreferences("PLAYERS", Context.MODE_PRIVATE);
+        SharedPreferences.Editor spEditor = sp.edit();
+
+        spEditor.putString("questionListOne", gson.toJson(questionListOne));
+        spEditor.putString("questionListTwo", gson.toJson(questionListTwo));
+        spEditor.putString("questionListThree", gson.toJson(questionListThree));
+
+
+        spEditor.putInt("playerTwoTotalL1", playerTwoTotalL1);
+        spEditor.putInt("playerOneTotalL1", playerOneTotalL1);
+
+        spEditor.putInt("playerOneTotalL2", playerOneTotalL2);
+        spEditor.putInt("playerTwoTotalL2", playerTwoTotalL2);
+
+        spEditor.putInt("playerOneTotalL3", playerOneTotalL3);
+        spEditor.putInt("playerTwoTotalL3", playerTwoTotalL3);
+
+        spEditor.putString("currentLevel", currentLevel);
+
+        spEditor.putString("lastPlayer", lastPlayer);
+
+        spEditor.apply();
 
 
     }
 
-    private void togglePlayers(){
-        if(currentPlayer.equals(PLAYER_ONE)){
+    private void togglePlayers() {
+        if (currentPlayer.equals(PLAYER_ONE)) {
             currentPlayer = PLAYER_TWO;
-        }else if(currentPlayer.equals(PLAYER_TWO)){
+        } else if (currentPlayer.equals(PLAYER_TWO)) {
+            currentPlayer = PLAYER_ONE;
+        } else {
             currentPlayer = PLAYER_ONE;
         }
     }
+
+    @Override
+    public void restart() {
+        final SharedPreferences sp = getSharedPreferences("PLAYERS", Context.MODE_PRIVATE);
+        SharedPreferences.Editor spEditor = sp.edit();
+        spEditor.remove("questionListOne");
+        spEditor.remove("questionListTwo");
+        spEditor.remove("questionListThree");
+
+        spEditor.remove("playerTwoTotalL1");
+        spEditor.remove("playerOneTotalL1");
+
+        spEditor.remove("playerOneTotalL2");
+        spEditor.remove("playerTwoTotalL2");
+
+        spEditor.remove("playerOneTotalL3");
+        spEditor.remove("playerTwoTotalL3");
+        spEditor.remove("currentLevel");
+
+        spEditor.putString("lastPlayer", PLAYER_TWO);
+        spEditor.putString("currentLevel", LEVEL_ONE);
+        currentLevel = LEVEL_ONE;
+        currentPlayer = PLAYER_ONE;
+
+        questionListOne = questions(LEVEL_ONE);
+        questionListTwo = questions(LEVEL_TWO);
+        questionListThree = questions(LEVEL_THREE);
+
+        playerOneTotalL1 = 0;
+        playerTwoTotalL1 = 0;
+
+        playerOneTotalL2 = 0;
+        playerTwoTotalL2 = 0;
+
+        playerOneTotalL3 = 0;
+        playerTwoTotalL3 = 0;
+        spEditor.commit();
+
+    }
+
     @Override
     public void play() {
 
-        if(currentLevel.equals(LEVEL_ONE)){
-            if(questionListOne.size() <= 0){
+        if (currentLevel.equals(LEVEL_ONE)) {
+            if (questionListOne.size() <= 0) {
                 currentLevel = LEVEL_TWO;
 
-            }else {
+            } else {
                 Random random = new Random();
-                num =  random.nextInt(questionListOne.size());
+                num = random.nextInt(questionListOne.size());
                 FragmentManager fragmentManager = getSupportFragmentManager();
                 Question qn = questionListOne.get(num);
                 qn.setAnsweredBy(currentPlayer);
-                UserFragment  userFragment = new UserFragment(qn);
+//                togglePlayers();
+                UserFragment userFragment = new UserFragment(qn);
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                fragmentTransaction.replace(R.id.dropView,userFragment,"userFragment");
-                togglePlayers();
+                fragmentTransaction.replace(R.id.dropView, userFragment, "userFragment");
                 fragmentTransaction.commit();
             }
         }
 
-        if(currentLevel.equals(LEVEL_TWO)){
-            if(questionListTwo.size() <= 0){
+        if (currentLevel.equals(LEVEL_TWO)) {
+            if (questionListTwo.size() <= 0) {
                 currentLevel = LEVEL_THREE;
-            }else {
+            } else {
                 Random random = new Random();
-                num =  random.nextInt(questionListTwo.size());
+                num = random.nextInt(questionListTwo.size());
                 Question qn = questionListTwo.get(num);
                 qn.setAnsweredBy(currentPlayer);
                 FragmentManager fragmentManager = getSupportFragmentManager();
-                UserFragment  userFragment = new UserFragment(qn);
+                UserFragment userFragment = new UserFragment(qn);
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                fragmentTransaction.replace(R.id.dropView,userFragment,"userFragment");
-                togglePlayers();
+                fragmentTransaction.replace(R.id.dropView, userFragment, "userFragment");
+//                togglePlayers();
                 fragmentTransaction.commit();
             }
         }
-        if(currentLevel.equals(LEVEL_THREE)){
-            if(questionListThree.size() <= 0){
+        if (currentLevel.equals(LEVEL_THREE)) {
+            if (questionListThree.size() <= 0) {
                 currentLevel = "done";
                 Toast.makeText(this, "Levels Complete", Toast.LENGTH_SHORT).show();
-            }else {
+            } else {
                 Random random = new Random();
-                num =  random.nextInt(questionListThree.size());
+                num = random.nextInt(questionListThree.size());
                 Question qn = questionListThree.get(num);
                 qn.setAnsweredBy(currentPlayer);
                 FragmentManager fragmentManager = getSupportFragmentManager();
-                UserFragment  userFragment = new UserFragment(qn);
+                UserFragment userFragment = new UserFragment(qn);
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                fragmentTransaction.replace(R.id.dropView,userFragment,"userFragment");
-                togglePlayers();
+                fragmentTransaction.replace(R.id.dropView, userFragment, "userFragment");
+//                togglePlayers();
                 fragmentTransaction.commit();
             }
         }
-        if(currentLevel.equals("done")){
+        if (currentLevel.equals("done")) {
 
-                currentLevel = "done";
-                Toast.makeText(this, "Levels Complete Thank you for playing", Toast.LENGTH_SHORT).show();
+            currentLevel = "done";
+            Toast.makeText(this, "Levels Complete Thank you for playing", Toast.LENGTH_SHORT).show();
             FragmentManager fragmentManager = getSupportFragmentManager();
-            MarksFragment  marksFragment = new MarksFragment();
+            MarksFragment marksFragment = new MarksFragment();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.replace(R.id.dropView,marksFragment,"marksFragment");
+            fragmentTransaction.replace(R.id.dropView, marksFragment, "marksFragment");
             fragmentTransaction.commit();
 
         }
-
 
 
     }
@@ -340,9 +460,9 @@ public class MainActivity extends AppCompatActivity implements UserFragment.Reco
 
     @Override
     public ArrayList<LevelResults> getLevelResults() {
-        LevelResults levelone = new LevelResults(LEVEL_ONE, playerOneTotalL1,playerTwoTotalL1);
-        LevelResults leveltwo = new LevelResults(LEVEL_TWO, playerOneTotalL2,playerTwoTotalL2);
-        LevelResults levelthree = new LevelResults(LEVEL_THREE, playerOneTotalL3,playerTwoTotalL3);
+        LevelResults levelone = new LevelResults(LEVEL_ONE, playerOneTotalL1, playerTwoTotalL1);
+        LevelResults leveltwo = new LevelResults(LEVEL_TWO, playerOneTotalL2, playerTwoTotalL2);
+        LevelResults levelthree = new LevelResults(LEVEL_THREE, playerOneTotalL3, playerTwoTotalL3);
         levelResultsList = new ArrayList<>();
         levelResultsList.add(levelone);
         levelResultsList.add(leveltwo);
@@ -353,13 +473,8 @@ public class MainActivity extends AppCompatActivity implements UserFragment.Reco
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
-
-        // Trigger the initial hide() shortly after the activity has been
-        // created, to briefly hint to the user that UI controls
-        // are available.
         hide();
     }
-
 
 
     private void hide() {

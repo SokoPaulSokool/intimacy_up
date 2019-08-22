@@ -4,49 +4,76 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="5dp"
+    android:padding="10dp"
     tools:context=".NameFragment">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Players Names" />
+        android:layout_marginBottom="20dp"
+        android:text="Players Names"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:text="Changing names will result in loosing all your records"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="30dp"
+        android:orientation="vertical">
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Player 1" />
+
         <EditText
-            android:layout_width="match_parent"
             android:id="@+id/player1"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-    </LinearLayout><LinearLayout
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Player 2" />
+
         <EditText
-            android:layout_width="match_parent"
             android:id="@+id/player2"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
     </LinearLayout>
 
 
     <Button
-        android:layout_gravity="center_horizontal"
-        android:layout_width="wrap_content"
-        android:textColor="@color/white"
         android:id="@+id/submit"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
         android:background="@drawable/gradient_cherry"
-        android:text="Submit"/>
+        android:text="Submit"
+        android:textColor="@color/white" />
+      <Button
+        android:id="@+id/exit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/gradient_cherry"
+        android:text="Close"
+        android:textColor="@color/white" />
+
 </LinearLayout>

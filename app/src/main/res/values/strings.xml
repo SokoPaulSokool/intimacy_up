@@ -8,4 +8,17 @@
     <string name="title_activity_splash">SplashActivity</string>
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
+
+    <!--<array name="ratings">-->
+        <!--<item>1 </item>-->
+        <!--<item>2 </item>-->
+        <!--<item>3 </item>-->
+        <!--<item>4 </item>-->
+        <!--<item>5 </item>-->
+        <!--<item>6 </item>-->
+        <!--<item>7 </item>-->
+        <!--<item>8 </item>-->
+        <!--<item>9 </item>-->
+        <!--<item>10 </item>-->
+    <!--</array>-->
 </resources>
